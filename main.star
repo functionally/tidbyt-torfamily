@@ -29,6 +29,17 @@ RED_DOT = "#FF0000"
 FG_BLACK = "#000000"
 FG_WHITE = "#FFFFFF"
 
+# Family-label color. We want a hue that's *maximally different* from the
+# tile background palette (green / yellow / orange / red — all warm, all
+# heavy on R and/or G channels) so the label stays distinct on any health
+# state. Pure blue has zero R, zero G — no channel overlap with any warm
+# background. A half-brightness navy renders as readable "dark text" on
+# the bright tiles (yellow/orange/green) where dim-against-bright is the
+# right contrast story. On the dark-red all-down tile both colors are dim
+# and contrast is poor — acceptable because the red tile is itself the
+# alarm and the label is secondary.
+FAMILY_LABEL_COLOR = "#000080"
+
 def fetch_family(fingerprint):
     """Fetch the trimmed detail set for every relay in the family.
     Returns None on transport / parse error, a (possibly empty) list of
@@ -153,18 +164,24 @@ def _dots_row(relays):
         ))
     return render.Row(cross_align = "center", children = children)
 
-def _big_tile(running, total, bg, fg):
-    label = str(running) + "/" + str(total)
+def _big_tile(family_label, running, total, bg, fg):
+    """Big tile: family identifier (first 4 hex chars of the fingerprint)
+    on top in dark navy, big running/total count below in the category
+    foreground. Vertical spacing via space_evenly distributes the ~11 px
+    slack (32 - 8 tb-8 - 13 6x13) between the two children as top / between
+    / bottom gaps."""
+    count = str(running) + "/" + str(total)
     return render.Box(
         width = 28,
         height = 32,
         color = bg,
         child = render.Column(
             expanded = True,
-            main_align = "center",
+            main_align = "space_evenly",
             cross_align = "center",
             children = [
-                render.Text(label, color = fg, font = "6x13"),
+                render.Text(family_label, color = FAMILY_LABEL_COLOR, font = "tb-8"),
+                render.Text(count, color = fg, font = "6x13"),
             ],
         ),
     )
@@ -183,6 +200,17 @@ def _error_view(msg):
             ),
         ),
     )
+
+def _family_label(fp):
+    """First 4 hex chars of the fingerprint, normalized. Strips a leading '$'
+    (Tor's nickname-prefix convention) and upper-cases the result so the
+    label is consistent regardless of how the fingerprint was pasted."""
+    if fp == None:
+        return "????"
+    s = fp.lstrip("$")
+    if len(s) < 4:
+        return "?" * 4
+    return s[:4].upper()
 
 def main(config):
     fp = config.get("family_fingerprint", "")
@@ -217,7 +245,7 @@ def main(config):
             child = render.Row(
                 expanded = True,
                 children = [
-                    _big_tile(running, total, bg, fg),
+                    _big_tile(_family_label(fp), running, total, bg, fg),
                     right_col,
                 ],
             ),

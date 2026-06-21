@@ -62,7 +62,9 @@ Onionoo's `family=` query is symmetric: pass any one fingerprint and you get bac
 ### Big tile
 
 - Width 28 × height 32 (full display height).
-- Centered "`<running>/<total>`" in `6x13` font. 7/7 fits comfortably; the format supports any 1-digit / 1-digit count up through 2-digit / 2-digit (`12/12` = 18 px in `6x13`, fits in the 28 px tile).
+- **Top:** first 4 hex characters of the family fingerprint, `tb-8` font (Pixlet's default 8-tall variable-width font), **dark navy** (`#000080` — half-brightness pure blue). Acts as a "which family is this?" identifier without dominating the tile. The hue is maximally distinct from every health-state background (green/yellow/orange/red all share R and/or G channels; pure blue uses only the B channel) and the half-brightness reads as "dark text" against the bright Moderate/USG/Good tiles. Using `tb-8` instead of the smaller `tom-thumb` puts more colored pixels on the screen, which further amplifies the hue contrast against the bright background.
+- **Bottom:** "`<running>/<total>`" in `6x13` font. 7/7 fits comfortably; the format supports any 1-digit / 1-digit count up through 2-digit / 2-digit (`12/12` = 18 px in `6x13`, fits in the 28 px tile).
+- Vertical layout is `Column(main_align="space_evenly")` — the 11 px of slack (32 px tile − 8 px label − 13 px count) distributes as ~3–4 px top, ~3–4 px between, ~3–4 px bottom.
 - Background color encodes the aggregate health:
 
 | Condition | Background | Foreground | Color name |
@@ -87,9 +89,13 @@ Three rows in `tom-thumb`:
 
 7 dots at 4 px + 1 px gap each = 35 px in a 36 px right column. The layout accommodates up to ~10 relays before overflow — fine for the typical small-operator family, not for large fleets. Larger families would need a different visualization (stacked rows of dots, or aggregate-only).
 
-### Why no family label
+### Why a 4-character fingerprint label, not the nickname
 
-A nickname-derived label (the common prefix shared by all relays in the family) would typically consume most of the right column at tom-thumb widths. The user knows what family they're monitoring; the display answers "is it healthy?" not "which family is this?" — same reasoning as omitting the timestamp on the AQ display.
+Tor relay nicknames are 1–19 characters, often sharing a prefix across the family (e.g., `<NICK>1` through `<NICK>7`). At tom-thumb widths a typical nickname-derived label would consume most of the right column or overflow the big tile. The fingerprint's first 4 hex characters are always exactly 4 characters wide, unambiguous against any other family the operator might monitor at the same time, and easy to spot at a glance.
+
+The label color (`#000080`, navy / half-brightness pure blue) doesn't change with the health-state background — it's a constant "this is which family" cue, distinct from the warm green/yellow/orange/red palette that encodes health. The "warm vs. cool" hue split means the label reads as visually different content even when the background is also at high luminance.
+
+An earlier iteration used a bright Tor-brand purple (`#BB80FF`); that worked OK on green and dark red but had low contrast against the yellow Moderate tile because purple shares the red channel with yellow. Switching to a pure-blue hue removes any channel overlap with the warm-palette backgrounds.
 
 ## Caching and cadence
 
@@ -126,6 +132,7 @@ Override:
 | Per-relay dot — green | `#00C800` | Tidbyt-friendly green, less saturated than EPA |
 | Per-relay dot — yellow | `#FFEE00` | "almost EPA yellow", with red tinge for contrast |
 | Per-relay dot — red | `#FF0000` | EPA AQI Unhealthy |
+| Family label — navy | `#000080` | Pure blue at 50% brightness. Only B channel — zero overlap with green/yellow/orange/red backgrounds; reads as "dark text" on bright tiles |
 
 ## Starlark gotchas (carried from sibling projects)
 

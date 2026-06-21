@@ -8,10 +8,10 @@ See [design-notes.md](./design-notes.md) for layout choices and the Onionoo sche
 
 ```
 ┌────────────┬──────────────────┐
-│            │ BW         48M   │   total advertised bandwidth (bytes/sec, formatted)
-│   7/7      │ CW       0.96%   │   family's share of Tor network consensus weight
-│  (color)   │ ●●●●●●●          │   one colored 4×4 dot per relay
-│            │                  │
+│   E56E     │ BW         48M   │   family ID = first 4 hex chars of the fingerprint, in dark navy
+│            │ CW       0.96%   │   family's share of Tor network consensus weight
+│   7/7      │ ●●●●●●●          │   one colored 4×4 dot per relay
+│  (color)   │                  │
 └────────────┴──────────────────┘
    running / total                  per-relay color:
                                       green  = running, version OK
