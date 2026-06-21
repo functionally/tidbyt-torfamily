@@ -1,0 +1,32 @@
+# torrelay — podman kube spec for the push daemon.
+#
+# Start the pod:   podman kube play torrelay.yaml
+# Stop the pod:    podman kube down torrelay.yaml
+# Replace running: podman kube play --replace torrelay.yaml
+# Container logs:  podman logs -f torrelay-tidbyt
+#
+# The image is built by scripts/build-container.sh, which bakes config.yaml
+# in at build time. No volume mounts or secrets are needed at launch.
+#
+# Push runs once per hour at HH:10 UTC. The Tor consensus publishes at
+# HH:00 UTC; by HH:10 Onionoo has the new data. Override the minute by
+# editing PUSH_AT_MINUTE_UTC below.
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: torrelay
+  labels:
+    app: torrelay
+spec:
+  restartPolicy: Always
+  containers:
+    - name: tidbyt
+      image: localhost/torrelay:latest
+      env:
+        - name: PUSH_AT_MINUTE_UTC
+          value: "10"
+      # No ports exposed — outbound HTTPS only to
+      # onionoo.torproject.org and api.tidbyt.com.
+      securityContext:
+        readOnlyRootFilesystem: false  # /tmp/frame.webp is written each cycle
