@@ -134,6 +134,19 @@ Override:
 | Per-relay dot — red | `#FF0000` | EPA AQI Unhealthy |
 | Family label — navy | `#000080` | Pure blue at 50% brightness. Only B channel — zero overlap with green/yellow/orange/red backgrounds; reads as "dark text" on bright tiles |
 
+## Diagnostics
+
+Every render emits a structured trace via Starlark `print()` — Pixlet routes these to stderr and the container loop captures both streams into `podman logs`. Per-render lines:
+
+- `[fetch] GET <url with FP redacted> ttl=<seconds>` — the Onionoo request, with the family fingerprint replaced by `<FP_REDACTED>` before logging (the FP is the only piece of config considered sensitive — see [README.md](./README.md)).
+- `[fetch] Onionoo HTTP=<status> bytes=<n>` — response status and body size.
+- `[fetch] Onionoo relays=<n>` — relay count returned by `family=` expansion.
+- `[compute] family=<4-char label> running=<r>/<t> bw=<formatted> cw=<pct> any_outdated=<bool>` — aggregate, mirroring the values the big tile and the right column will show.
+- `[compute] relay nickname=<…> running=<bool> ver=<…> bw=<bytes/s> cwf=<frac>` — one line per relay, with the raw fields the dot color decision uses.
+- `[render] tile_bg=<hex> family=<label>` — final tile background.
+
+Replay: `podman logs torrelay | grep -E '^\[(fetch|compute|render)\]'`, slice by the surrounding `[<iso-ts>] push ok` envelopes from the bash loop. The fingerprint is never printed, so log excerpts can be shared safely; relay nicknames are public Onionoo data.
+
 ## Starlark gotchas (carried from sibling projects)
 
 - `%` operator has no precision specifier — no `%.4f`. Format manually with integer arithmetic.

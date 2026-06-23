@@ -45,14 +45,22 @@ def fetch_family(fingerprint):
     Returns None on transport / parse error, a (possibly empty) list of
     relay dicts otherwise."""
     if not fingerprint:
+        print("[fetch] Onionoo SKIP (no fingerprint)")
         return None
     fields = "nickname,running,advertised_bandwidth,consensus_weight_fraction,version_status"
     url = "%s/details?family=%s&fields=%s" % (ONIONOO_BASE, fingerprint, fields)
+    # Redact the family fingerprint in the logged URL — the user has
+    # asked that the fingerprint not appear outside config.yaml.
+    safe_url = url.replace(fingerprint, "<FP_REDACTED>")
+    print("[fetch] GET %s ttl=%d" % (safe_url, FETCH_TTL_S))
     r = http.get(url, ttl_seconds = FETCH_TTL_S)
+    print("[fetch] Onionoo HTTP=%d bytes=%d" % (r.status_code, len(r.body())))
     if r.status_code != 200:
         return None
     body = r.json() or {}
-    return body.get("relays", [])
+    relays = body.get("relays", [])
+    print("[fetch] Onionoo relays=%d" % len(relays))
+    return relays
 
 def _is_outdated(r):
     """`version_status` is a string: 'recommended', 'experimental', 'obsolete',
@@ -225,6 +233,17 @@ def main(config):
 
     running, total, total_bw, total_cwf, any_outdated = _aggregate(relays)
     bg, fg = _tile_colors(running, total, any_outdated)
+
+    print("[compute] family=%s running=%d/%d bw=%s cw=%s any_outdated=%s" % (
+        _family_label(fp), running, total,
+        _format_bw(total_bw), _format_cw_frac(total_cwf), any_outdated,
+    ))
+    for r in relays:
+        print("[compute] relay nickname=%s running=%s ver=%s bw=%s cwf=%s" % (
+            r.get("nickname", "?"), r.get("running"), r.get("version_status"),
+            r.get("advertised_bandwidth"), r.get("consensus_weight_fraction"),
+        ))
+    print("[render] tile_bg=%s family=%s" % (bg, _family_label(fp)))
 
     right_col = render.Padding(
         pad = (2, 0, 0, 0),
